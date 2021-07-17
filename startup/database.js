@@ -8,8 +8,8 @@ init = () => {
         useCreateIndex: true})
     .then(() => {
         console.log("Connected to mongoDB")
-    }).catch(() => {
-        console.log("Could not connect to mongoDB")
+    }).catch((err) => {
+        console.log("Could not connect to mongoDB", err)
     });
 }
 
