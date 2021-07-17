@@ -1,7 +1,6 @@
 require('dotenv').config();
 
 const express = require('express')
-const mongoose = require('mongoose');
 const { init:initDb } = require('./startup/database');
 
 
