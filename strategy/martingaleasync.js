@@ -9,6 +9,8 @@ const fs = require('fs');
 
 class MartingaleSyncStrategy extends EventEmmiter {
     
+    firstBalance = -1;
+
     binanceService;
 
     totalTrades;
@@ -80,9 +82,19 @@ class MartingaleSyncStrategy extends EventEmmiter {
 
         if (this.logPriceCounter == 10) {
             const balanceAndPnl = await this.binanceService.getBalanceAndPnl();
+
+            const cnt = this.longs.length + this.shorts.length;
+
+            if(this.firstBalance == -1) {
+                this.firstBalance = balanceAndPnl.balance
+            }
+
+            let diff = balanceAndPnl.balance - this.firstBalance;
+
             let log = '';
             log += `${date.format(currentTime, 'YYYY/MM/DD HH:mm:ss')} - price : ${markPrice} - next long : ${this.getNextLongPrice()} - next short : ${this.getNextShortPrice()}`;
             log += ` - balance : ${balanceAndPnl.balance} - pnl : ${balanceAndPnl.pnl} - target : ${this.getTargetPnl()}`;
+            log += ` - martingale cnt : ${cnt} - diff balance : ${diff}`;
             console.log(log);
 
             this.logPriceCounter = 0;
