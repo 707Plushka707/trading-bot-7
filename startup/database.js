@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { consoleLogger, fileLogger } = require('../utils/logger');
 
 init = () => {
     mongoose.connect(process.env.DB_URL, {
