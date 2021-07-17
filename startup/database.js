@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 init = () => {
-    mongoose.connect(process.env.DB_URL, {
+    mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.d515z.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useFindAndModify: false,
