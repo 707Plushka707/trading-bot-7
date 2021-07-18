@@ -10,9 +10,9 @@ init = () => {
         useFindAndModify: false,
         useCreateIndex: true})
     .then(() => {
-        fileLogger.info("Connected to mongoDB")
+        consoleLogger.info("Connected to mongoDB")
     }).catch((err) => {
-        fileLogger.error("Could not connect to mongoDB", err)
+        consoleLogger.error("Could not connect to mongoDB", err)
     });
 }
 
