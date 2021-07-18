@@ -21,16 +21,17 @@ const consoleLogger = createLogger({
     ]
 });
 
-const fileLogger = createLogger({
-    format: combine(
-        splat(),
-        timestamp(),
-        myFormat
-    ),
-    transports: [
-        new transports.Console(),
-        new transports.File({ filename: process.env.LOG_FILE, maxsize: 100000, maxFiles: 10 }),
-    ]
-});
+const fileLogger = null;
+// const fileLogger = createLogger({
+//     format: combine(
+//         splat(),
+//         timestamp(),
+//         myFormat
+//     ),
+//     transports: [
+//         new transports.Console(),
+//         new transports.File({ filename: process.env.LOG_FILE, maxsize: 100000, maxFiles: 10 }),
+//     ]
+// });
 
 module.exports = { consoleLogger, consoleLogger };
