@@ -1,6 +1,6 @@
 const Binance = require('node-binance-api');
 const EventEmmiter = require('events');
-const { consoleLogger, fileLogger } = require('../utils/logger')
+const { fileLogger } = require('../utils/logger')
 
 const binance = new Binance().options({
     APIKEY: process.env.API_KEY,

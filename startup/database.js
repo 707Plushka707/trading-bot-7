@@ -1,16 +1,18 @@
 const mongoose = require('mongoose');
+const format = require('string-format')
+const { consoleLogger, fileLogger } = require('../utils/logger')
 
 init = () => {
-    // mongoose.connect(`mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.d515z.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`, {
-    mongoose.connect(process.env.DB_URL, {
+    const connectionString = format(process.env.DB_URL, process.env.DB_USER, process.env.DB_PASS, process.env.DB_NAME)
+    mongoose.connect(connectionString, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         useFindAndModify: false,
         useCreateIndex: true})
     .then(() => {
-        console.log("Connected to mongoDB")
+        fileLogger.info("Connected to mongoDB")
     }).catch((err) => {
-        console.log("Could not connect to mongoDB", err)
+        fileLogger.error("Could not connect to mongoDB", err)
     });
 }
 
