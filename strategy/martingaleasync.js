@@ -3,6 +3,7 @@ const DummyWSService = require('../service/dummyws.js');
 const DemoService = require('../service/demo');
 const BinanceService = require('../service/binance');
 const date = require('date-and-time');
+const { LogModel } = require('../model/log')
 const EventEmmiter = require('events');
 
 const fs = require('fs');
@@ -96,6 +97,20 @@ class MartingaleSyncStrategy extends EventEmmiter {
             log += ` - balance : ${balanceAndPnl.balance} - pnl : ${balanceAndPnl.pnl} - target : ${this.getTargetPnl()}`;
             log += ` - martingale cnt : ${cnt} - diff balance : ${diff}`;
             console.log(log);
+
+            var logModel = new LogModel({
+                time: date.format(currentTime, 'YYYY/MM/DD HH:mm:ss'),
+                symbol:this.symbol,
+                price: markPrice,
+                nextLong: this.getNextLongPrice(),
+                nextShort: this.getNextShortPrice(),
+                balance: balanceAndPnl.balance,
+                pnl: balanceAndPnl.pnl,
+                target: this.getTargetPnl(),
+                martinGaleCnt: cnt,
+                diffBalance: diff
+            })
+            await logModel.save();
 
             this.logPriceCounter = 0;
         }
