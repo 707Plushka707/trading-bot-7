@@ -4,6 +4,7 @@ const DemoService = require('../service/demo');
 const BinanceService = require('../service/binance');
 const date = require('date-and-time');
 const { LogModel } = require('../model/log')
+const { consoleLogger, fileLogger } = require('../utils/logger')
 const EventEmmiter = require('events');
 
 const fs = require('fs');
@@ -96,7 +97,7 @@ class MartingaleSyncStrategy extends EventEmmiter {
             log += `${date.format(currentTime, 'YYYY/MM/DD HH:mm:ss')} - price : ${markPrice} - next long : ${this.getNextLongPrice()} - next short : ${this.getNextShortPrice()}`;
             log += ` - balance : ${balanceAndPnl.balance} - pnl : ${balanceAndPnl.pnl} - target : ${this.getTargetPnl()}`;
             log += ` - martingale cnt : ${cnt} - diff balance : ${diff}`;
-            console.log(log);
+            fileLogger.info(log);
 
             var logModel = new LogModel({
                 time: date.format(currentTime, 'YYYY/MM/DD HH:mm:ss'),
@@ -265,19 +266,21 @@ class MartingaleSyncStrategy extends EventEmmiter {
 
     logClose = async (pnlDone, currentTime) => {
         return new Promise(async (resolve, reject) => {
-            console.log("===================");
-            console.log("==== CLOSE ALL ====");
-            console.log("===================");
-            console.log("= pnlDone : " + pnlDone);
-            console.log("= balance : " + await this.binanceService.getBalance());
-            console.log("= time elapled = " + this.getDiffDateInMinutes(currentTime, this.startTime) / 60);
-            console.log("= max hours to close = " + this.maxMinutes / 60);
-            console.log("= worstPNL : " + this.worstPNL);
-            console.log("= closeCount : " + this.closeCount);
-            console.log("= maxMartigaleCount : " + this.maxMartigaleCount);
-            console.log("= tradeCount = " + this.tradeCount);
-            console.log("= lockcount = " + this.lockcount);
-            console.log("===================");
+            let log = "";
+            log += ("===================");
+            log += ("==== CLOSE ALL ====");
+            log += ("===================");
+            log += ("= pnlDone : " + pnlDone);
+            log += ("= balance : " + await this.binanceService.getBalance());
+            log += ("= time elapled = " + this.getDiffDateInMinutes(currentTime, this.startTime) / 60);
+            log += ("= max hours to close = " + this.maxMinutes / 60);
+            log += ("= worstPNL : " + this.worstPNL);
+            log += ("= closeCount : " + this.closeCount);
+            log += ("= maxMartigaleCount : " + this.maxMartigaleCount);
+            log += ("= tradeCount = " + this.tradeCount);
+            log += ("= lockcount = " + this.lockcount);
+            log += ("===================");
+            fileLogger.info(log);
             resolve();
         })
     }
@@ -290,10 +293,12 @@ class MartingaleSyncStrategy extends EventEmmiter {
             this.positionAmount = await this.binanceService.getBalance() * this.positionPercent * await this.binanceService.getLeverage();
             
             this.positionQuantity = parseFloat(this.positionAmount / markPrice).toFixed(3);
-            console.log(" ** positionAmount " + this.positionAmount)
-            console.log(" ** positionQuantity " + this.positionQuantity)
-            console.log(" ** targetPercent " + this.targetPercent)
-            console.log(" ** targetPriceDistance " + this.targetPriceDistance)
+            let log = "";
+            log += (" ** positionAmount " + this.positionAmount)
+            log += (" ** positionQuantity " + this.positionQuantity)
+            log += (" ** targetPercent " + this.targetPercent)
+            log += (" ** targetPriceDistance " + this.targetPriceDistance)
+            fileLogger.info(log);
             this.firstPostionTime = currentTime;
             resolve(await this.openLong(markPrice, currentTime));
         })
@@ -304,7 +309,7 @@ class MartingaleSyncStrategy extends EventEmmiter {
             this.tradeCount++;
             const long = await this.binanceService.open('long', this.positionQuantity, markPrice);
             this.longs.push(long);
-            console.log("OPEN LONG : time " + time + ", " + markPrice + ", next : " + this.getNextLongPrice() + ", pnl : " + await this.binanceService.getPNL());
+            fileLogger.info("OPEN LONG : time " + time + ", " + markPrice + ", next : " + this.getNextLongPrice() + ", pnl : " + await this.binanceService.getPNL());
             resolve();
         })
     }
@@ -314,7 +319,7 @@ class MartingaleSyncStrategy extends EventEmmiter {
             this.tradeCount++;
             const short = await this.binanceService.open('short', this.positionQuantity, markPrice);
             this.shorts.push(short);
-            console.log("OPEN SHORT : time " + time + ", " + markPrice + ", next : " + this.getNextShortPrice() + ", pnl : " + await this.binanceService.getPNL());
+            fileLogger.info("OPEN SHORT : time " + time + ", " + markPrice + ", next : " + this.getNextShortPrice() + ", pnl : " + await this.binanceService.getPNL());
             resolve();
         })
     }

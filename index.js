@@ -27,7 +27,6 @@ const start = async () => {
 
     require('./startup/database').init();
     executeStrategy();
-    console.log("end index.js");
 
     // const express = require('express')
     // const app = express()
