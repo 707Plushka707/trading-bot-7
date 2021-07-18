@@ -33,4 +33,4 @@ const fileLogger = createLogger({
     ]
 });
 
-module.exports = { consoleLogger, consoleLogger };
+module.exports = { consoleLogger, fileLogger };

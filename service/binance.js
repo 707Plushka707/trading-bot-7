@@ -1,6 +1,6 @@
 const Binance = require('node-binance-api');
 const EventEmmiter = require('events');
-const { consoleLogger, fileLogger } = require('../utils/logger')
+const { fileLogger } = require('../utils/logger')
 
 const binance = new Binance().options({
     APIKEY: process.env.API_KEY,
@@ -80,8 +80,8 @@ class BinanceService extends EventEmmiter {
         this.#pricePrecision = parseInt(data.pricePrecision);
         this.#lotSize = parseFloat(data.filters.filter(f => f.filterType == "MARKET_LOT_SIZE")[0].stepSize);
 
-        consoleLogger.info(`Precision : ${this.#pricePrecision}`);
-        consoleLogger.info(`LotSize : ${this.#lotSize}`);
+        fileLogger.info(`Precision : ${this.#pricePrecision}`);
+        fileLogger.info(`LotSize : ${this.#lotSize}`);
 
     }
 
@@ -90,31 +90,31 @@ class BinanceService extends EventEmmiter {
         let result = await binance.futuresPositionRisk({symbol:this.#symbol});
         if(result.code) {
             const log = `Can not get margin type : ${JSON.stringify(result)}`;
-            consoleLogger.error(log);
+            fileLogger.error(log);
             throw Error(log);
         }
 
         if(result[0].marginType.toUpperCase() != "CROSS") {
-            consoleLogger.info("Need to set margin type to crossed");
+            fileLogger.info("Need to set margin type to crossed");
 
             result = await binance.futuresMarginType(this.#symbol, "CROSSED");
             if(result.code != 200) {
                 const log = `Could not initialize margin type : ${JSON.stringify(result)}`;
-                consoleLogger.error(log);
+                fileLogger.error(log);
                 throw Error(log);
             }
         }
-        consoleLogger.info(`Margin type initialiazed successfully`);
+        fileLogger.info(`Margin type initialiazed successfully`);
     }
 
     initLeverage = async () => {
         const result = await binance.futuresLeverage(this.#symbol, this.#params.leverage);
         if(result.code) {
             const log = `Can not set leverage to ${this.#params.leverage} : ${JSON.stringify(result)}`;
-            consoleLogger.error(log);
+            fileLogger.error(log);
             throw new Error(log);
         }
-        consoleLogger.info(`Leverage initialiazed successfully : ${JSON.stringify(result)}`);
+        fileLogger.info(`Leverage initialiazed successfully : ${JSON.stringify(result)}`);
     }
 
     initHedgeMode = async () => {
@@ -124,16 +124,16 @@ class BinanceService extends EventEmmiter {
         result = await binance.futuresPositionSideDual();
 
         if(!result.dualSidePosition) {
-            consoleLogger.info("Need to set hedge mode on");
+            fileLogger.info("Need to set hedge mode on");
 
             result = await binance.futuresChangePositionSideDual(true);
             if(result.code != 200) {
                 const log = `Could not initialize hedge mode (setting hedge position) : ${JSON.stringify(result)}`;
-                consoleLogger.error(log);
+                fileLogger.error(log);
                 throw Error(log);
             }
         }
-        consoleLogger.info(`Hedge mode initialized successfully : ${JSON.stringify(result)}`);
+        fileLogger.info(`Hedge mode initialized successfully : ${JSON.stringify(result)}`);
     }
 
 
