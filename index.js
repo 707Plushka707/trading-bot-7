@@ -25,6 +25,10 @@ const executeStrategy = () => {
   
 const start = async () => {
 
+
+    console.log("Hello");
+    console.log(process.env.TEST_MODE);
+
     require('./startup/database').init();
     executeStrategy();
 
