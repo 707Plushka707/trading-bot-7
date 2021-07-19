@@ -3,20 +3,21 @@ const DummyWSService = require('../service/dummyws.js');
 const DemoService = require('../service/demo');
 const BinanceService = require('../service/binance');
 const date = require('date-and-time');
-const { LogModel } = require('../model/log')
-const { consoleLogger, fileLogger } = require('../utils/logger')
+const { PriceLogModel } = require('../model/priceLog')
+const { TradeLogModel } = require('../model/tradeLog')
+const { StratLogModel } = require('../model/stratLog')
+const { fileLogger } = require('../utils/logger')
 const EventEmmiter = require('events');
 
 const fs = require('fs');
 
 class MartingaleSyncStrategy extends EventEmmiter {
     
-    firstBalance = -1;
 
+    // Service
     binanceService;
 
-    totalTrades;
-
+    // Parameters
     positionPercent;
     positionAmount;
     positionQuantity
@@ -26,21 +27,24 @@ class MartingaleSyncStrategy extends EventEmmiter {
 
     symbol;
 
+    // positions
     longs = new Array();
     shorts = new Array();
 
-    startTime;
+    // global stats 
+    firstBalance = -1;
     firstPostionTime;
-
     worstPNL = 0;
+    maxMinutes = 0;
     closeCount = 0;
     maxMartigaleCount = 0;
-    maxMinutes = 0;
-    tradeCount = 0;
 
+    // Current trade stats
+    startTime;
+    martingaleCount = 0;
+    
+    //  technical
     lock = false;
-    lockcount = 0;
-
     logPriceCounter = 0;
 
     //----------------
@@ -77,54 +81,11 @@ class MartingaleSyncStrategy extends EventEmmiter {
         }
     }
 
-    logPrice = async (markPrice, currentTime) => {
-        this.logPriceCounter++;
-
-
-
-        if (this.logPriceCounter == 10) {
-            const balanceAndPnl = await this.binanceService.getBalanceAndPnl();
-
-            const cnt = this.longs.length + this.shorts.length;
-
-            if(this.firstBalance == -1) {
-                this.firstBalance = balanceAndPnl.balance
-            }
-
-            let diff = balanceAndPnl.balance - this.firstBalance;
-
-            let log = '';
-            log += `${date.format(currentTime, 'YYYY/MM/DD HH:mm:ss')} - price : ${markPrice} - next long : ${this.getNextLongPrice()} - next short : ${this.getNextShortPrice()}`;
-            log += ` - balance : ${balanceAndPnl.balance} - pnl : ${balanceAndPnl.pnl} - target : ${this.getTargetPnl()}`;
-            log += ` - martingale cnt : ${cnt} - diff balance : ${diff}`;
-            fileLogger.info(log);
-
-            var logModel = new LogModel({
-                time: date.format(currentTime, 'YYYY/MM/DD HH:mm:ss'),
-                symbol:this.symbol,
-                price: markPrice,
-                nextLong: this.getNextLongPrice(),
-                nextShort: this.getNextShortPrice(),
-                balance: balanceAndPnl.balance,
-                pnl: balanceAndPnl.pnl,
-                target: this.getTargetPnl(),
-                martinGaleCnt: cnt,
-                diffBalance: diff
-            })
-            await logModel.save();
-
-            this.logPriceCounter = 0;
-        }
-
-    }
-
 
     start = () => {
-        let line = 0;
         this.binanceService.listen(async (e) => {
 
             if(this.lock) {
-                this.lockcount++;
                 return;
             }
 
@@ -199,9 +160,6 @@ class MartingaleSyncStrategy extends EventEmmiter {
             this.lock = false;
             this.emit('endprice');
         });
-
-        // console.log("end martingale strategy");
-
     }
 
 
@@ -233,56 +191,15 @@ class MartingaleSyncStrategy extends EventEmmiter {
             this.longs = new Array();
             this.shorts = new Array();
             this.logClose(myPNL, currentTime);
-            this.emit('close', {
-                symbol:this.symbol,
-                pnlDone:myPNL,
-                balance: await this.binanceService.getBalance(),
-                timeElapsed:this.getDiffDateInMinutes(currentTime, this.startTime) / 60,
-                maxHourClose:this.maxMinutes / 60,
-                worstPNL:this.worstPNL,
-                closeCount:this.closeCount,
-                maxMartigaleCount:this.maxMartigaleCount,
-                tradeCount:this.tradeCount,
-            });
+            
+            // TODO
+            // timeElapsed:this.getDiffDateInMinutes(currentTime, this.startTime) / 60,
+            // maxHourClose:this.maxMinutes / 60,
+            // worstPNL:this.worstPNL,
+            // closeCount:this.closeCount,
+
             resolve();
         });
-    }
-
-    saveStats = (currentTime) => {
-        this.closeCount++;
-        if(this.shorts.length + this.longs.length > this.maxMartigaleCount) {
-            this.maxMartigaleCount = this.shorts.length + this.longs.length;
-        }
-        let minutes = this.getDiffDateInMinutes(currentTime, this.firstPostionTime)
-        if(minutes > this.maxMinutes) {
-            this.maxMinutes = minutes;
-        }
-    }
-
-    getDiffDateInMinutes = (date1, date2) => {
-        var diff = Math.abs(date1.getTime() - date2.getTime()) / 3600000 * 60
-        return diff;
-    }
-
-    logClose = async (pnlDone, currentTime) => {
-        return new Promise(async (resolve, reject) => {
-            let log = "";
-            log += ("===================");
-            log += ("==== CLOSE ALL ====");
-            log += ("===================");
-            log += ("= pnlDone : " + pnlDone);
-            log += ("= balance : " + await this.binanceService.getBalance());
-            log += ("= time elapled = " + this.getDiffDateInMinutes(currentTime, this.startTime) / 60);
-            log += ("= max hours to close = " + this.maxMinutes / 60);
-            log += ("= worstPNL : " + this.worstPNL);
-            log += ("= closeCount : " + this.closeCount);
-            log += ("= maxMartigaleCount : " + this.maxMartigaleCount);
-            log += ("= tradeCount = " + this.tradeCount);
-            log += ("= lockcount = " + this.lockcount);
-            log += ("===================");
-            fileLogger.info(log);
-            resolve();
-        })
     }
 
     openFirst = async (markPrice, currentTime) => {
@@ -306,7 +223,7 @@ class MartingaleSyncStrategy extends EventEmmiter {
 
     openLong = async (markPrice, time) => {
         return new Promise(async (resolve, reject) => {
-            this.tradeCount++;
+            this.martingaleCount++;
             const long = await this.binanceService.open('long', this.positionQuantity, markPrice);
             this.longs.push(long);
             fileLogger.info("OPEN LONG : time " + time + ", " + markPrice + ", next : " + this.getNextLongPrice() + ", pnl : " + await this.binanceService.getPNL());
@@ -316,7 +233,7 @@ class MartingaleSyncStrategy extends EventEmmiter {
 
     openShort = async (markPrice, time) => {
         return new Promise(async (resolve, reject) => {
-            this.tradeCount++;
+            this.martingaleCount++;
             const short = await this.binanceService.open('short', this.positionQuantity, markPrice);
             this.shorts.push(short);
             fileLogger.info("OPEN SHORT : time " + time + ", " + markPrice + ", next : " + this.getNextShortPrice() + ", pnl : " + await this.binanceService.getPNL());
@@ -338,6 +255,107 @@ class MartingaleSyncStrategy extends EventEmmiter {
         }
         const minShort = this.shorts.length == 0 ? this.longs[this.longs.length - 1].open : this.shorts[this.shorts.length - 1].open;
         return minShort - (this.targetPriceDistance);
+    }
+
+    // ----------------------------------
+
+    saveStats = (currentTime) => {
+        this.closeCount++;
+        if(this.shorts.length + this.longs.length > this.maxMartigaleCount) {
+            this.maxMartigaleCount = this.shorts.length + this.longs.length;
+        }
+        let minutes = this.getDiffDateInMinutes(currentTime, this.firstPostionTime)
+        if(minutes > this.maxMinutes) {
+            this.maxMinutes = minutes;
+        }
+    }
+
+    logPrice = async (markPrice, currentTime) => {
+        this.logPriceCounter++;
+
+        if (this.logPriceCounter == 10) {
+            const balanceAndPnl = await this.binanceService.getBalanceAndPnl();
+
+            if(this.firstBalance == -1) {
+                this.firstBalance = balanceAndPnl.balance
+            }
+
+            let log = '';
+            log += `${date.format(currentTime, 'YYYY/MM/DD HH:mm:ss')} - price : ${markPrice}`;
+            log += ` - next long : ${this.getNextLongPrice()} - next short : ${this.getNextShortPrice()}`;
+            log += ` - balance : ${balanceAndPnl.balance} - pnl : ${balanceAndPnl.pnl} - target : ${this.getTargetPnl()}`;
+            log += ` - hours elapsed : ${(this.getDiffDateInMinutes(currentTime, this.firstPostionTime) / 60)}`;
+            log += ` - martingale cnt : ${this.martingaleCount} - diff balance : ${this.firstBalance - balanceAndPnl.balance + balanceAndPnl.pnl}`;
+            log += ` - max cnt : ${this.maxMartigaleCount} - worst pnl : ${this.worstPNL} - max hours : ${(this.maxMinutes/60)}`;
+            fileLogger.info(log);
+
+            var priceLogModel = new PriceLogModel({
+                time: currentTime,
+                symbol:this.symbol,
+                price: markPrice,
+                nextLong: this.getNextLongPrice(),
+                nextShort: this.getNextShortPrice(),
+                martingaleCount: this.martingaleCount,
+                minutesElapsed: this.getDiffDateInMinutes(currentTime, this.firstPostionTime),
+                target: this.getTargetPnl(),
+                pnl: balanceAndPnl.pnl,
+                balance: balanceAndPnl.balance,
+                netValue: balanceAndPnl.balance + balanceAndPnl.pnl,
+                startBalance: this.firstBalance
+            })
+            await priceLogModel.save();
+
+            // TEST 
+
+            // const filter = { name: 'Will Riker' };
+            // const update = { age: 29 };
+
+            // await Character.countDocuments(filter); // 0
+
+            // let doc = await Character.findOneAndUpdate(filter, update, {
+            // new: true,
+            // upsert: true // Make this update into an upsert
+            // });
+
+            
+            // startTime:Date,
+            // symbol:String,
+            // pnl:mongoose.Decimal128,
+            // minutesElapsed:Number,
+            // martingaleCount:Number,
+            // startBalance:mongoose.Decimal128
+            // var priceLogModel = new TradeLogModel({
+            //     startTime: this.firstPostionTime,
+            //     symbol,
+            // });
+
+            this.logPriceCounter = 0;
+        }
+    }
+
+    logClose = async (pnlDone, currentTime) => {
+        return new Promise(async (resolve, reject) => {
+            let log = "";
+            log += ("===================");
+            log += ("==== CLOSE ALL ====");
+            log += ("===================");
+            log += ("= pnlDone : " + pnlDone);
+            log += ("= balance : " + await this.binanceService.getBalance());
+            log += ("= time elapled = " + this.getDiffDateInMinutes(currentTime, this.startTime) / 60);
+            log += ("= max hours to close = " + this.maxMinutes / 60);
+            log += ("= worstPNL : " + this.worstPNL);
+            log += ("= closeCount : " + this.closeCount);
+            log += ("= maxMartigaleCount : " + this.maxMartigaleCount);
+            log += ("= martingaleCount = " + this.martingaleCount);
+            log += ("===================");
+            fileLogger.info(log);
+            resolve();
+        })
+    }
+
+    getDiffDateInMinutes = (date1, date2) => {
+        var diff = Math.abs(date1.getTime() - date2.getTime()) / 3600000 * 60
+        return diff;
     }
 } 
 

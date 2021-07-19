@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const format = require('string-format')
-const { consoleLogger, fileLogger } = require('../utils/logger')
+const { fileLogger } = require('../utils/logger')
 
 init = () => {
     const connectionString = format(process.env.DB_URL, process.env.DB_USER, process.env.DB_PASS, process.env.DB_NAME)

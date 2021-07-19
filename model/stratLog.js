@@ -1,18 +1,14 @@
 const mongoose = require('mongoose');
 
-const logSchema = 
+const stratLogSchema = 
     new mongoose.Schema(
         {
-            time: String,
-            symbol: String,
-            price: String,
-            nextLong: String,
-            nextShort: String,
-            balance: String,
-            pnl: String,
-            target: String,
-            martinGaleCnt: String,
-            diffBalance: String
+            symbol:String,
+            worstPNL:mongoose.Decimal128,
+            maxMinutes:Number,
+            maxMartingale:Number,
+            closeCount:Number,
+            totalPnl:mongoose.Decimal128
         }, 
         {
             timestamps: true,
@@ -38,6 +34,6 @@ const logSchema =
       
 );
 
-const LogModel = mongoose.model('Log', logSchema);
+const StratLogModel = mongoose.model('StratLog', stratLogSchema);
 
-module.exports.LogModel = LogModel;
+module.exports.StratLogModel = StratLogModel;

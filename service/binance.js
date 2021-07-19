@@ -143,7 +143,7 @@ class BinanceService extends EventEmmiter {
 
     getBalance = async () => {
         const result = await binance.futuresBalance();
-        return result.filter(i => i.asset == "USDT")[0].availableBalance;
+        return parseFloat(result.filter(i => i.asset == "USDT")[0].availableBalance);
     }
 
     getLeverage = async () => {
@@ -152,15 +152,15 @@ class BinanceService extends EventEmmiter {
 
     getPNL = async () => {
         const result = await binance.futuresBalance();
-        return result.filter(i => i.asset == "USDT")[0].crossUnPnl;
+        return parseFloat(result.filter(i => i.asset == "USDT")[0].crossUnPnl);
     }
 
     getBalanceAndPnl =  async () => {
         const result = await binance.futuresBalance();
         const asset = result.filter(i => i.asset == "USDT")[0];
         return {
-            balance:asset.availableBalance,
-            pnl:asset.crossUnPnl
+            balance:parseFloat(asset.availableBalance),
+            pnl:parseFloat(asset.crossUnPnl)
         } 
     }
 
