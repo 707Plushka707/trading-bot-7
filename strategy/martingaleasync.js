@@ -280,23 +280,33 @@ class MartingaleSyncStrategy extends EventEmmiter {
                 this.firstBalance = balanceAndPnl.balance
             }
 
+            const minutesElapsed = this.getDiffDateInMinutes(currentTime, this.firstPostionTime);
+
+            // -------------
+            // Console log
+            // -------------
+
             let log = '';
             log += `${date.format(currentTime, 'YYYY/MM/DD HH:mm:ss')} - price : ${markPrice}`;
             log += ` - next long : ${this.getNextLongPrice()} - next short : ${this.getNextShortPrice()}`;
             log += ` - balance : ${balanceAndPnl.balance} - pnl : ${balanceAndPnl.pnl} - target : ${this.getTargetPnl()}`;
-            log += ` - hours elapsed : ${(this.getDiffDateInMinutes(currentTime, this.firstPostionTime) / 60)}`;
+            log += ` - hours elapsed : ${(minutesElapsed / 60)}`;
             log += ` - martingale cnt : ${this.martingaleCount} - diff balance : ${this.firstBalance - balanceAndPnl.balance + balanceAndPnl.pnl}`;
             log += ` - max cnt : ${this.maxMartigaleCount} - worst pnl : ${this.worstPNL} - max hours : ${(this.maxMinutes/60)}`;
             fileLogger.info(log);
 
-            var priceLogModel = new PriceLogModel({
+            // -------------
+            // Price log
+            // -------------
+
+            let priceLogModel = new PriceLogModel({
                 time: currentTime,
                 symbol:this.symbol,
                 price: markPrice,
                 nextLong: this.getNextLongPrice(),
                 nextShort: this.getNextShortPrice(),
                 martingaleCount: this.martingaleCount,
-                minutesElapsed: this.getDiffDateInMinutes(currentTime, this.firstPostionTime),
+                minutesElapsed: minutesElapsed,
                 target: this.getTargetPnl(),
                 pnl: balanceAndPnl.pnl,
                 balance: balanceAndPnl.balance,
@@ -305,29 +315,23 @@ class MartingaleSyncStrategy extends EventEmmiter {
             })
             await priceLogModel.save();
 
-            // TEST 
+            // -------------
+            // Trade log
+            // -------------
 
-            // const filter = { name: 'Will Riker' };
-            // const update = { age: 29 };
-
-            // await Character.countDocuments(filter); // 0
-
-            // let doc = await Character.findOneAndUpdate(filter, update, {
-            // new: true,
-            // upsert: true // Make this update into an upsert
-            // });
-
-            
-            // startTime:Date,
-            // symbol:String,
-            // pnl:mongoose.Decimal128,
-            // minutesElapsed:Number,
-            // martingaleCount:Number,
-            // startBalance:mongoose.Decimal128
-            // var priceLogModel = new TradeLogModel({
-            //     startTime: this.firstPostionTime,
-            //     symbol,
-            // });
+            let tradeLogFilter = {
+                startTime: this.firstPostionTime,
+                symbol: this.symbol,
+            };
+            let tradeLog = {
+                pnl:balanceAndPnl.pnl,
+                minutesElapsed:minutesElapsed,
+                martingaleCount:this.maxMartigaleCount,
+                startBalance:this.firstBalance
+            };
+            await TradeLogModel.findOneAndUpdate(tradeLogFilter, tradeLog, {
+                upsert: true // Make this update into an upsert
+            });
 
             this.logPriceCounter = 0;
         }
@@ -349,6 +353,34 @@ class MartingaleSyncStrategy extends EventEmmiter {
             log += ("= martingaleCount = " + this.martingaleCount);
             log += ("===================");
             fileLogger.info(log);
+            
+            // -------------
+            // Strat log
+            // -------------
+
+            let stratLogModel = await StratLogModel.findOne({symbol:this.symbol});
+            if(!stratLogModel) {
+                stratLogModel = new StratLogModel({
+                    symbol:this.symbol,
+                    worstPNL:this.worstPNL,
+                    maxMinutes:this.maxMinutes,
+                    maxMartingale:this.maxMartigaleCount,
+                    closeCount:this.closeCount,
+                    totalPnl:pnlDone
+                })
+            } else {
+                stratLogModel.set({
+                    symbol:this.symbol,
+                    worstPNL:this.worstPNL,
+                    maxMinutes:this.maxMinutes,
+                    maxMartingale:this.maxMartigaleCount,
+                    closeCount:this.closeCount,
+                    totalPnl:pnlDone+parseFloat(stratLogModel.totalPnl)
+                });
+            }
+
+            await stratLogModel.save();
+
             resolve();
         })
     }

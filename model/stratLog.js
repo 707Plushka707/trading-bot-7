@@ -16,8 +16,6 @@ const stratLogSchema =
                 transform: function (doc, ret) {
                     delete ret._id;
                     delete ret.__v;
-                    ret.close = ret.close.toString() * 1;
-                    ret.open = ret.open.toString() * 1;
                     return ret;
                 }
             },
@@ -25,8 +23,6 @@ const stratLogSchema =
                 transform: function (doc, ret) {
                     delete ret._id;
                     delete ret.__v;
-                    ret.close = ret.close.toString() * 1;
-                    ret.open = ret.open.toString() * 1;
                     return ret;
                 }
             }
