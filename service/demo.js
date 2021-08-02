@@ -1,7 +1,6 @@
 const fs = require('fs');
 const EventEmmiter = require('events');
 const Binance = require('node-binance-api');
-const {sleep} = require('../sleep');
 
 const binance = new Binance().options({
     APIKEY: process.env.API_KEY,

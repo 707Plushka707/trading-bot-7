@@ -1,7 +1,7 @@
 const fs = require('fs');
 const EventEmmiter = require('events');
 const Binance = require('node-binance-api');
-const {sleep} = require('../sleep');
+const { sleep } = require('../sleep');
 const io = require("socket.io-client");
 const { resolve } = require('path');
 

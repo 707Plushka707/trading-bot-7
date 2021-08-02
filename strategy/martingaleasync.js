@@ -191,12 +191,6 @@ class MartingaleSyncStrategy extends EventEmmiter {
             this.longs = new Array();
             this.shorts = new Array();
             this.logClose(myPNL, currentTime);
-            
-            // TODO
-            // timeElapsed:this.getDiffDateInMinutes(currentTime, this.startTime) / 60,
-            // maxHourClose:this.maxMinutes / 60,
-            // worstPNL:this.worstPNL,
-            // closeCount:this.closeCount,
 
             resolve();
         });

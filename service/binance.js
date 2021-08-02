@@ -1,6 +1,7 @@
 const Binance = require('node-binance-api');
 const EventEmmiter = require('events');
 const { fileLogger } = require('../utils/logger')
+const { sleep } = require('../sleep')
 
 const binance = new Binance().options({
     APIKEY: process.env.API_KEY,
@@ -13,7 +14,7 @@ class BinanceService extends EventEmmiter {
 
     #params;
     #symbol;
-    #websocket;
+    websocket;
 
     #pricePrecision; // number of digit
     #lotSize; // min qty
@@ -39,24 +40,26 @@ class BinanceService extends EventEmmiter {
     }
 
     listen = (callback) => {
-        
+
         const websocketname = this.#symbol.toLowerCase() + '@markPrice@1s';
 
-        this.#websocket = binance.futuresSubscribe(websocketname, (e) => {
+        let start = true;
+        this.websocket = binance.futuresSubscribe(websocketname, (e) => {
             const data = this.convertToMarkPrice(e);
-
-            // let log = data.time + ' - ';
-            // log += 'price : ' + data.markPrice + ' - ';
-            // log += 'pnl : ' + this.getPNL() + ' - ';
-
-            // console.log(log);
 
             if(callback) {
                 callback(data);
             }
         });
 
-        return this.#websocket;
+        this.websocket.on( 'close', async (info) => {
+            fileLogger.error(" //// Websocket closed !!! : " + info);
+            this.websocket = null;
+
+            fileLogger.info(" //// reconnection");
+            await sleep(5000);
+            await this.listen(callback);
+        });
     }
 
     //---------------------------------
@@ -194,7 +197,7 @@ class BinanceService extends EventEmmiter {
         }
 
         if(result.code && result.code != 200) {
-            this.#websocket.close();
+            this.websocket.close();
             throw Error(`Could open position ${side} ${fixedQuantity} : ${JSON.stringify(result)}`);
         }
         return  {
