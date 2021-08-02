@@ -6,7 +6,7 @@ const CONFIG = {
     symbol: 'BTCUSDT',
     leverage:10, 
     balance:1000,
-    targetPercent:0.004,
+    targetPercent:0.003,
     positionPercent:0.01,
     mode:'binance'
 }
