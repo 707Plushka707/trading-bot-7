@@ -3,10 +3,10 @@ const MartingaleSyncStrategy = require('./strategy/martingaleasync');
 const MartingaleStrategy = require('./strategy/martingale');
 
 const CONFIG = {
-    symbol: 'BTCUSDT',
+    symbol: 'ALPHAUSDT',
     leverage:10, 
     balance:1000,
-    targetPercent:0.003,
+    targetPercent:0.005,
     positionPercent:0.01,
     mode:'binance'
 }
